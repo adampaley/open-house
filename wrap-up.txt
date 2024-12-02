@@ -1,0 +1,207 @@
+Recap
+    - completed building an Express application where data relationships are managed through referencing
+Project Planning Review
+    - our application allows users to create listings for the propertyie they own and can track:
+        * street address
+        * city 
+        * price
+        * size in sq ft 
+        * owner 
+        * users who have favorited the listing
+
+    - users can browse all listings, access listing details, create new listings, edit existing ones, and delete listings
+    - additionally, users can favorite or unfavorite a listing
+
+    - we built out our user stories and ERD to help us plan out this application
+    - we also built out our application in a way where we can easily add new features to it
+
+User Stories 
+    - user stories are a way to describe an application's functionality from a user's perspective
+    - remmeber they are often written in the format of:
+        As a user, I want X for Y reason
+    - user stories are often used as a checklist to work through as we build our an application
+
+ERD
+    - entity relationship diagrams (ERDs) are a way to visualize the structure of data in an application, often used to plan out the structure of an application's database
+
+                    User                                                    Listings
+    Field       Type        Options                     Field               Type        Options
+|--<_id         ObjectId                      +-----    _id                 ObjectId
+|   username    String      { required: true }     |    streetAddress       String      { required: true }
+|   password    String      { required: true }     |    city                String      { required: true }
+|                                                  |    price               Number      { required: true, min: 0 }
+|                                                  |    size                Number      { required: true, min: 0 }
+|                                                  |---<owner               ObjectId    { ref: "User" }
+|------------------------------------------------------<favoritedByUsers    ObjectId    { ref: "User" }
+
+Referencing One-to-Mnay Relationships 
+    - we have learned how to reference one-to-many relationships in our application
+    - we have done this by adding a reference to the owner field in our listings collection
+    - this allows us to track which user owns a listing
+
+    - the process of referencing one-to-many relationships is:
+        1. add a field to the Schema of the many side of the relationship
+            const listingSchema = new Schema({
+              // other fields
+              owner: {},
+            });
+        2. add a reference to the Schema of the many side of the relationship:
+            const listingSchema = new Schema({
+              // other fields
+              owner: {
+                type: Schema.Types.ObjectId,
+                ref: 'User',
+              },
+            });
+
+        - we use the ref key to tell Mongoose which collection to use for the reference, in this case the User collection 
+    
+    - lastly, we could have embedded the listingSchema inside of the userSchema to accomplish much the same relationship
+        - this would still be a one-to-many relationship
+    - however, we have chosen to reference the User collection from the Listing collection 
+
+Referencing Many-to-Many Relationships 
+    - with this application, we learned how to form many-to-many relationships through referencing
+    - the many-to-many relationship between listings and users was formed through the favoritedByUsers property in listingSchema
+    - here, we stored an array of references to documents in the User collection 
+
+    - a many-to-many relationships can be formed by:
+        1. adding an array field to the Schema 
+            const listingSchema = new mongoose.Schema({
+              // other fields
+              favoritedByUsers: [],
+            });
+        2. specifying that the array will hold references to the collection on the other side of the relationship
+            const listingSchema = new Schema({
+              // other fields
+              owner: {
+                type: Schema.Types.ObjectId,
+                ref: 'User',
+              },
+            });
+
+        - in this case, embedding would not have been a viable option as it was with our one-to-many relationship
+        - unlike one-to-many relationships where a single parent can hold multiple children, in many-to-many relationships, each entity must exist independently in order to form connections to a variety of other entities
+
+        - with our many-to-many relationship in place, we utilized the populate() method for data retrieval
+            const populatedListings = await Listing.find({}).populate('owner');
+
+Protecting Resources 
+    - we also learned how to protect resources, ensuring only authorized users can modify them
+    - protecting resources refers to the process of restricting access to certain actions based on specific user criteria
+    - in our application, we ensured resources like listings can only be modified by their owner
+    
+    - applied the following strategies:
+        1. conditional rendering on the client-side
+            <% if (listing.owner._id.equals(user._id)) { %> 
+            ... 
+            <% } %>
+
+        2. protected controller actions on the server
+            if (listing.owner.equals(req.session.user._id)) {
+                ...
+            } else {
+                res.send("You don't have permission to do that.");
+            }
+
+Formatting Currency in JavaScript 
+    - formatting currency in JavaScript it not too difficult
+    - however, there are some things that we need to consider when working with currency in JavaScript
+    - let's take a look at some of these considerations:
+        * use a library 
+        * location considerations
+        * data consistency 
+        * client-side vs server-side formatting 
+
+    Use a Library 
+        - it is recommended to use a library that can format currency for you
+        - this is because we don't wwant to recreate the wheel and there are some edge cases that we might not consider when formatting currency 
+        - we are in luck because there is alrady a built-in library that we can use, Int.NumberFormat()
+            - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat
+        
+        > lets see how we can use this library to format currency in JS 
+            const formatter = new Intl.NumberFormat('en-US', {
+              style: 'currency',
+              currency: 'USD',
+              minimumFractionDigits: 2,
+            });
+
+            formatter.format(2500); /* $2,500.00 */
+    
+    Location Considerations
+        - when formatting currency, we need to consider the location of the user
+        - different countries use different currency symbols and different formats for displaying
+            e.g. in the US, we use the dollar sign $ to represent our currency
+            - however, in Canada, they use the dollar sign $ as well
+            - to differentiate, Canada uses the dollar sign $ and the letters CAD to represent their currency
+
+        - we can use the Intl.NumberFormat() method to format our currency based on the location of the user 
+        - let's take a look at how we can do this
+            const formatter = new Intl.NumberFormat('en-US', {
+              style: 'currency',
+              currency: 'CAD',
+              minimumFractionDigits: 2,
+            });
+
+            formatter.format(500); /* CA$500.00 */
+
+        - we can see a full list of values for the currency values by running this code
+            Intl.supportedValuesOf('currency').forEach((currency) => {
+                console.log(currency)
+            })
+
+    Data Consistency 
+        - when working with currency, we want to make sure that we are consistent with how we store our data
+        - for example, we want to make sure that we are storing our data as a number and not a string 
+        - this is because we want to be able to perform mathematical operations on our data 
+        - if we store our data as a string, we will not be able to perform mathematical operations on it 
+
+        JavaScript Numbers 
+            - JS numberes under the hood are represented as 64-bit floating-point numbers
+            - this means that JS numbers are not integers
+            - this can cause some issues when working with currency 
+                e.g. if we try to add two numbers together, we might get a result that is now what we expect
+                    const num1 = 0.1;
+                    const num2 = 0.2;
+
+                    num1 + num2; /* 0.30000000000000004 */
+            - we can see that the result is not 0.3 as we would expect
+                - this is because of how JS stores numbers 
+            - to get around this, we can use the built-in Number() method to convert our number to integers
+                const num1 = 0.1;
+                const num2 = 0.2;
+
+                Number((num1 + num2).toFixed(2)); /* 0.3 */
+
+            - we can see that we get the result we expect
+            - can also see that we are using the built-in toFixed() method to round our number to two decimal places 
+            - this is because we want to make sure that we are working with two decimal places when working with currency
+    
+    Client-side vs Server-seide Formatting 
+        - when working with currency, we need to consider where we are formatting our currency
+        - we can format our currency on the client-side or the server-side
+        
+        Client-side Formatting 
+            * pros:
+                * less load on server
+                * faster response times
+                * less data transfer
+            * cons: 
+                * inconsistent formatting 
+                * security concerns
+        Server-side Formatting
+            * pros:
+                * consistent formatting
+                * more secure
+            * cons:
+                * more load on the server 
+                * slower response times
+                * more data transfer 
+        
+        - client-side formatting is great because it is faster and uses less data transfer
+            - however, it is not as secure as server-side formatting
+            - this is because the client can manipulate the data before it is sent to the server
+            - this can cause some security concerns
+
+        - server-side formatting is great because it is more secure and consistent
+            - however, it is slower and uses more data transfer

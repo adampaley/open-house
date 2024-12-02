@@ -1,0 +1,103 @@
+User Story 
+    - address the next user story 
+        As a user who owns a listing, I want to edit details of my listings, to ensure the information stays up-to-date.
+    - this functionality will require two requests
+        1. a GET to render the view
+        2. a PUT to update the resource 
+
+Conceptualize the Route
+    - our route should listen for GET requests on /listings/:listingId 
+        Action | What It Does                                  | HTTP Verbs | Route
+        Edit   | Renders a view for editing a specific listing | GET        | /listings/:listingId
+
+Building the UI
+    - need to add an anchor tag to our show view, which should only be visible to the owner of a listing
+    > update the if block as shown below
+        <!-- views/listings/show.ejs -->
+
+        <% if (listing.owner._id.equals(user._id)) { %>
+        <p>You own this!</p>
+        <a href="/listings/<%= listing._id %>/edit">Edit this listing</a>
+
+Scaffolding the Function 
+    > build the scaffolding for our controller
+        // controllers/listings.js
+
+        router.get('/:listingId/edit', async (req, res) => {
+          try {
+            console.log('listingId: ', req.params.listingId);
+            res.send(`Listings edit view`);
+          } catch (error) {
+            console.log(error);
+            res.redirect('/');
+          }
+        });
+
+Writing the Controller Action 
+    > with access to the listingId, we can build out the rest of the function, passing the listing to our view
+
+    // controllers/listings.js
+
+        router.get('/:listingId/edit', async (req, res) => {
+          try {
+            const currentListing = await Listing.findById(req.params.listingId);
+            res.render('listings/edit.ejs', {
+            listing: currentListing,
+            });
+          } catch (error) {
+            console.log(error);
+            res.redirect('/');
+          }
+        });
+
+Rending the View 
+    > create an edit.ejs file
+        touch views/listings/edit.ejs
+    > add the following to views/listings/edit.ejs
+        <!-- views/listings/edit.ejs -->
+
+        <!DOCTYPE html>
+        <html lang="en">
+          <head>
+            <meta charset="UTF-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <title>Edit <%= listing.name %></title>
+          </head>
+          <body>
+            <%- include('../partials/_navbar.ejs') %>
+            <h1>Edit a Listing!</h1>
+          </body>
+        </html>
+
+Building the Form 
+    > after header, add the following <form>
+        <!-- views/listings/edit.ejs -->
+
+        <form>
+          <label for="streetAddress">Street address:</label>
+          <input
+            type="text"
+            name="streetAddress"
+            id="street"
+            value="<%= listing.streetAddress %>"
+          />
+          <label for="city">City:</label>
+          <input type="text" name="city" id="city" value="<%= listing.city %>" />
+          <label for="price">Price:</label>
+          <input
+            type="number"
+            name="price"
+            id="price"
+            value="<%= listing.price %>"
+            min="0"
+          />
+          <label for="size">Size:</label>
+          <input
+            type="number"
+            name="size"
+            id="size"
+            value="<%= listing.size %>"
+            min="0"
+          />
+          <button type="submit">Edit Listing</button>
+        </form>

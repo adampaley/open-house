@@ -1,0 +1,160 @@
+User Story
+    - handle following user story
+        As a user, I want to see the number of favorites a listing has received, to gauge its popularity and potential demand. As a user, I want to favorite a listing, so I can easily find and review it later.
+
+Conceptualizing the Route
+    - our route should listen for POST requests on /listings/:listingId/favorited-by/:userId
+        Action | What It Does        | HTTP Verbs | Route
+        Create | Favorites a listing | POST       | /listings/:listingId/favorited-by/:userId
+    
+    - could technically omit :userId from our route since our auth middleware already gives us access to user through req.session
+    - however, the pattern you see here is common in development and worth practicing
+
+Building the UI 
+    - add a 'Favorites' section to views/listings/show.ejs
+    - in this section, will display the number of poeple that have favorited a listing, and a button for makring the listing as a favorite
+
+    - include two pieces of data in our POST request:
+        1. listing._id
+        2. user._id 
+    
+    > add the following to views/listings/show.ejs 
+        <!-- views/listings/show.ejs -->
+
+        <h2>Favorites</h2>
+        <p>Favorited by <%= listing.favoritedByUsers.length %> people.</p>
+        <form
+          action="/listings/<%= listing._id %>/favorited-by/<%= user._id %>"
+          method="POST"
+        >
+          <button type="submit">Favorite it!</button>
+        </form>
+
+Scaffolding the Function 
+    - confirm that both the listingId and the userId are accessible through req.params
+    > add the following to controllers/listings.js 
+        // controllers/listings.js
+
+        router.post('/:listingId/favorited-by/:userId', async (req, res) => {
+          try {
+            console.log('userId: ', req.params.userId);
+            console.log('listingId: ', req.params.listingId);
+            res.send(`Request to favorite ${req.params.listingId}`);
+          } catch (error) {
+            console.log(error);
+            res.redirect('/');
+          }
+        });
+    
+    > click the button and check the terminal for the logged data 
+
+Writing the Controller Action 
+    - our controller action will update a listing by adding a userId to the favoritedByUsers array 
+    - will utilize the findByIdAndUpdate() method
+        - https://mongoosejs.com/docs/api/model.html#Model.findByIdAndUpdate()
+
+    - findByIdAndUpdate() accepts two arguments
+        1. an ObjectId for locating documents
+        2. an object containing data to update the document with
+    
+    - the update object we use where will be different from what you've seen in the past, as we need to modify an array inside the listing document
+    - for this, we'll make use of MongoDB's $push operator
+
+    - the $push operator is used to add a new value to an array
+        - https://www.mongodb.com/docs/manual/reference/operator/update/push/
+    - the operator requires that we specify the target arry and the value to add
+
+    - when used inside an update object, we would see something like the following syntax
+        const updateObject = { $push: { targetArray: newValue } }
+    
+    - for our purposes, we'll be adding req.params.userId to favoritedByUsers
+
+    > update the function as shown below
+        // controllers/listings.js
+
+        router.post('/:listingId/favorited-by/:userId', async (req, res) => {
+          try {
+            await Listing.findByIdAndUpdate(req.params.listingId, {
+            $push: { favoritedByUsers: req.params.userId },
+            });
+            res.redirect(`/listings/${req.params.listingId}`);
+          } catch (error) {
+            console.log(error);
+            res.redirect('/');
+          }
+        });
+
+    - should be able to favorite a listing
+
+Modifying the View 
+    - touch up the show page with some conditional rendering
+    - once a user favorites a listing, they should no longer see the 'Favorite It!' button
+    - can determine if a user has favorited a listing by checking if their ObjectId is inside the favoritedByUsers array 
+    
+    - this determination can actually be handled in the corresponding controller action by creating a boolean called userHasFavorited
+    - we can then pass this boolean to the show view, and conditionally render the 'Favorite It!' button based on its value
+
+    > update the 'show' controller
+        // controllers/listings.js
+
+        router.get('/:listingId', async (req, res) => {
+          try {
+            const populatedListings = await Listing.findById(
+              req.params.listingId
+            ).populate('owner');
+
+            const userHasFavorited = populatedListings.favoritedByUsers.some((user) =>
+              user.equals(req.session.user._id)
+            );
+
+            res.render('listings/show.ejs', {
+              listing: populatedListings,
+              userHasFavorited: userHasFavorited,
+            });
+          } catch (error) {
+            console.log(error);
+            res.redirect('/');
+          }
+        });
+
+        - the some() array method returns true if at least one element passes the test in the provided callback
+            - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/some
+            - in this example, if at least one ObjectId in the aray matches that of the current user, the value of userHasFavorited will be true
+            - if there is no matching ObjectId, userHasFavorited will have a value of false
+
+    > we'll update our view with an if...else block 
+        <!-- views/listings/show.ejs -->
+
+        <h2>Favorites</h2>
+        <p>Favorited by <%= listing.favoritedByUsers.length %> people.</p>
+
+        <% if (userHasFavorited) { %>
+        <p>You've favorited this listing!</p>
+        <% } else { %>
+        <p>You haven't favorited this listing.</p>
+        <% } %>
+`
+        - notice how concise our conditional rendering is here
+        - this is a direct result of the additional work we did in our controller action
+            - while it's possible to achieve this functionality entirely in the view, it is better practice to handle complex logic liek this in controllers
+        
+        > move the <form> and <button> into the else block
+            <!-- views/listings/show.ejs -->
+
+            <h2>Favorites</h2>
+
+            <p>Favorited by <%= listing.favoritedByUsers.length %> people.</p>
+
+            <% if (userHasFavorited) { %>
+            <p>You've favorited this listing!</p>
+            <% } else { %>
+            <p>You haven't favorited this listing.</p>
+
+            <form
+              action="/listings/<%= listing._id %>/favorited-by/<%= user._id %>"
+              method="POST"
+            >
+              <button type="submit">Favorite it!</button>
+            </form>
+
+            <% } %>

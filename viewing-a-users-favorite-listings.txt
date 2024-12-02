@@ -1,0 +1,186 @@
+User Story 
+    - look at user story 
+        As a user, I want a profile page to view both the listings I own and the listings I’ve favorited, so that I can easily review everything in one place.
+    
+    - previously, we used populate() to render listings with their related data
+        - for this story, we'll take a slightly different approach
+        - our functionality will being with the user
+        - we'll be able to retrieve all of the listings associated with that user by querying the database for their ObjectId
+
+Conceptualizing the Route
+    - our route should listen for GET requests on /users/profile
+        Action  | What It Does                                               | HTTP Verbs | Route
+        Profile | Displays information about and data associated with a user | GET        | /users/profile
+
+        - we could include the userId as a parameter in our route, but in this case we'll reley on the auth middleware for identifying necessary resources
+
+Building the UI 
+    > add the following anchor tag to the navbar
+        <!-- views/partials/_navbar.ejs -->
+
+        <a href="/users/profile">Profile</a>
+
+Scaffolding the Function
+    Setup
+        - create and mount a new userController file
+        > run the following command
+            touch controllers/users.js
+        > add the following boilerplate
+            // controllers/users.js
+
+            const express = require('express');
+            const router = express.Router();
+            const Listing = require('../models/listing.js');
+
+            module.exports = router;
+        > import the userController in server.js 
+            // server.js
+
+            const usersController = require('./controllers/users.js');
+        > then mount the controller 
+            // server.js
+
+            app.use('/users', isSignedIn, usersController);
+
+    Defining the Function 
+        - build the scaffolding for our controller function
+        - with this, we'll confirm that our route is working as expected, and that we have access to user through req.session 
+
+        > add the following 
+            // controllers/users.js
+
+            router.get('/profile', async (req, res) => {
+              try {
+                console.log('user: ', req.session.user);
+                res.send('Profile page');
+              } catch (error) {
+                console.log(error);
+              }
+            });
+
+        - in browser, navigate to the profile page and check your terminal
+        - confirm that req.session.user is being logged correctly 
+
+Writing the Controller Action 
+    - despite this functionality being in controllers/user.js, the resource we are concerned with here is Listing
+    - in our controller action, we want to find() and render() two kinds of listings:
+        1. myListings: Listings owned by the current user
+        2. myFavoriteListings: Listings favorited by the current user 
+    - the find() operation accepts an object we wish to query by 
+    - for myListings, we want to query our database for any listings that contain req.session.user._id on the owner property
+    - for myFavoriteListings, we'll query for the same value on favoritedByUsers
+    - we'll also populate() the owner path on both of these queries in case we want to diplay owner.username beside each listing 
+
+    > add the following
+        // controllers/users.js
+
+        router.get('/profile', async (req, res) => {
+          try {
+            const myListings = await Listing.find({
+              owner: req.session.user._id,
+            }).populate('owner');
+
+            const myFavoriteListings = await Listing.find({
+              favoritedByUsers: req.session.user._id,
+            }).populate('owner');
+
+            console.log('myListings:', myListings);
+            console.log('myFavoriteListings:', myFavoriteListings);
+
+            res.send('Profile page');
+          } catch (error) {
+            console.log(error);
+            res.redirect('/');
+          }
+        });
+
+        - notice how we are filtering the results of the find() operations by values held in an array field with favoritedByUsers: req.session.user._id 
+    
+    - in your browser, once again navigate to the profile page and check your terminal
+    - you may need to create or favorite a listing if you have not done so already
+
+    > after verifying the data, be sure to render and pass myListings and myFavoriteListings to the view
+
+        // controllers/users.js
+
+        res.render('users/show.ejs', {
+          myListings,
+          myFavoriteListings,
+        });
+
+Responding with a View 
+    - our last step here is to create 
+    > run the following command in your terminal 
+        touch views/users/show.ejs
+    > start by adding the following
+        <!-- views/users/show.ejs -->
+
+        <!DOCTYPE html>
+        <html lang="en">
+          <head>
+            <meta charset="UTF-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <title>My Profile</title>
+          </head>
+          <body>
+            <%- include('../partials/_navbar.ejs') %>
+            <h1>Profile</h1>
+
+            <h2>My Listings</h2>
+
+            <h2>My Favorites</h2>
+          </body>
+        </html>
+
+    Displaying the Listing Count 
+        - notice how we've marked off two distinct sections of the profile page with <h2> tags 
+        - one will be used for displaying listing the user owns, and the other for displaying listings the user has favorited 
+    
+        - below each <h2>, let's include a <p> tag that displays how many corresponding listings are in that section 
+
+        > add the followng to the 'My Listings' section 
+            <!-- views/users/show.ejs -->
+
+            <h2>My Listings</h2>
+            <p>
+              You own <%= myListings.length %> <%= myListings.length === 1 ? 'listing.' :
+              'listings.' %>
+            </p>
+
+        - the ternary above is used to adjust the text between 'listing' and 'listings' based on the number of items in myListings
+        - this ensures that our messaging is grammatically correctly
+
+        You Do:
+            <!-- views/users/show.ejs -->
+
+            <h2>My Listings</h2>
+            <p>
+              You have <%= myFavoriteListings.length %> <%= myFavoriteListings.length === 1 ? 'favorite listing.' :
+              'favorite listings.' %>
+            </p>
+
+    Rendering the Listings
+        > add the following <ul> to the 'My Listings' section
+            <!-- views/users/show.ejs -->
+
+            <ul>
+              <% myListings.forEach((listing) => { %>
+              <li>
+                A listing in <%= listing.city %> owned by <%= listing.owner.username %>.
+                <a href="/listings/<%= listing._id %>">View more details.</a>
+              </li>
+              <% }) %>
+            </ul>
+
+        You Do: render each item in myFavoriteListings
+            <!-- views/users/show.ejs -->
+
+            <ul>
+              <% myFavoriteListings.forEach((listing) => { %>
+                <li>
+                  A listing in <%= listing.city %> owned by <%= listing.owner.username %>.
+                  <a href="/listings/<%= listing._id %>">View more details.</a>
+                </li>
+              <% }) %>
+            </ul>
+        

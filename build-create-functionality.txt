@@ -1,0 +1,44 @@
+POST a New Listing 
+    - the action for creating a new listing breaks down into two parts
+        * rendering a form for the user to enter the listing details
+        * using the form data to create the listing in the database 
+
+    - in the last section, we completed the first of the above tasks to create a new listing
+    - we are going to focus on the second task and use the form data to create a new listing in the database
+
+    - since we are accepting data from the user, we know that we need a POST route to /listings
+    > add this to our table 
+        Action | What It Does                            | HTTP Verbs | Route
+        Index  | Displays all listings                   | GET        | /listings
+        New    | Displays a form to create a new listing | GET        | /listings/new
+        Create | Creates a new listing in the database   | POST       | /listings
+
+    > update our form in views/listings/new.ejs to POST request to /listings
+        <!-- views/listings/new.ejs -->
+
+        <form action="/listings" method="POST"></form>
+
+You Do: Create a New Listing 
+    - in controllers/listings.js, build a route for POST requests to /listings
+        1. create a route for POST requests to /listings
+        2. console.log() the data being sent from the form
+        3. using res.redirect() redirect to /listings 
+        - use req.body to access the data from the form
+    - after you have completed the above steps, you should be able to see the data from the form in the terminal
+
+Database Insertion 
+    - need owner field
+    - intentionally left that out of the form, because we don't want the user to be able to see the owner of a listing
+    - instead, we want the current signed-in user to be "automatically" assigned to a listing they create
+
+    - recall that we can access the currently signed-in user on the req.session object
+    - can use this to set the owner of the listing in our controller functioning
+    > update our route to create a new listing in the database 
+        router.post('/', async (req, res) => {
+          req.body.owner = req.session.user._id;
+          await Listing.create(req.body);
+          res.redirect('/listings');
+        });
+
+    - if we were to console.log the req.body object after we add the owner key, we would see an object that directly matches our schema
+    - since this is the case, we can pass the req.body object directly into the Listing.create() method 

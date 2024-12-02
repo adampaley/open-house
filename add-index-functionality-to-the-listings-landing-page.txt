@@ -1,0 +1,100 @@
+User Story
+    > focus on the next user story 
+        As a user, I want to view all the listings created by every user on a single page, to explore available properties.
+    - we have a route and controller defined, but we are not yet rendering the data to the view
+    - when we display our listings, will want to include the city that each listing is in, as well as populate the username of the listing's owner
+    - to accomplish this, will need to make use of the Mongoose populate() method
+
+The populate() Method
+    - recall the owner property on our listingsSchema 
+        // models/listing.js
+          owner: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+          },
+        - the owner property stores the ObjectId of a user document
+        - this pattern is known as referencing, where a document in one collection links to a document in another collection by storing a record of its ObjectId 
+
+    - unlike embedding, where a parent document includes related sub-documents, with referencing we only store the ObjectId of the releated document, not the actual data
+
+    - while we could execute a separate database operation to retrueve the relevent user documents, Mongoose provides a method for joining related data with populate()
+        https://mongoosejs.com/docs/populate.html#population
+    
+    - the populate() method replaces a specified path in a document with documents from other collections
+    - it accepts a string specifying the path in the document that needs to be populated with data
+
+    ex:
+        const populatedListings = await Listing.find({}).populate('owner')
+    
+        - in this example, the populate() method is called on a find() operation
+        - it specifies that the ObjectId held in the owner field should be replaced with the corresponding user document
+        - this will apply to all listings (assuming they have an active owner field) returned by the find() operation 
+    
+Applying the populate() Method 
+    - let's apply the populate() method to our existing index controller function
+    - use it to fill the owner path of each listing with the referenced user doumcent
+    - later on, this will allow us to display the name of an owner beside each listing in our view
+    - start by getting a sense of how the populate() method changes the data returned from our find() operation
+
+    > update our controller function
+        router.get("/", async (req, res) => {
+            try {
+                const populatedListings = await Listing.find({}).populate('owner')
+                console.log('Populated Listings', populatedListings)
+                res.render('listings/index.ejs)
+            } catch (err) {
+                console.log(error)
+                res.redirect("/")
+            }
+        })
+    > navigate to the listings landing page and check terminal
+        - should see something like this 
+
+        Populated Listings [
+          {
+            _id: new ObjectId('674bc57da7c2fb857391b139'),
+            streetAddress: 'MyHouse',
+            city: 'Atlanta',
+            price: 1,
+            size: 1,
+            owner: {
+              _id: new ObjectId('674b978f72f711042f1485c5'),
+              username: 'Adam',
+              password: '$2b$10$yCs3bwxmrz.lOCs3nweZrORD9BabFFEibiUrjd.somEERIuClXdUu',
+              __v: 0
+            },
+            __v: 0
+          }
+        ]
+    - before applying .populate('owner'), the owner property of each listing only held an ObjectId
+    - now the related data is being joined, the ObjectId has been replaced by an actual document
+
+Rendering Data to the View 
+    - let's render our newly populated listing data 
+    > update the controller so that populatedListings is passed to the view as listings 
+        // controllers/listings.js
+
+        router.get('/', async (req, res) => {
+        try {
+            const populatedListings = await Listing.find({}).populate('owner');
+
+            // Add the following:
+            res.render('listings/index.ejs', {
+            listings: populatedListings,
+            });
+        } catch (error) {
+            console.log(error);
+            res.redirect('/');
+        }
+        });
+
+    > add the following to the <body> of views/listings/index.ejs
+        <!-- views/listings/index.ejs -->
+
+        <ul>
+          <% listings.forEach((listing) => { %>
+          <li>
+            A listing in <%= listing.city %> owned by <%= listing.owner.username %>.
+          </li>
+          <% }) %>
+        </ul>

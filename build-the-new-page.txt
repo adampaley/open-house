@@ -1,0 +1,79 @@
+GET a New Listing Form 
+    - the action for creating a new listing breaks down into two parts:
+        * rendering a form for the user to enter the listing details
+        * using the form data to create the listing in the database 
+    - these two parts require separate routes
+    - want to render a form for the user to enter their listing details
+    - determine that we need a GET route, but we have already mapped a GET route to /listings to view all listings
+    > add /new to the end of the path to create a new unique route for this action
+
+        Action | What It Does                            | HTTP Verbs | Route
+        Index  | Displays all listings                   | GET        | /listings
+        New    | Displays a form to create a new listing | GET        | /listings/new
+
+    - carried over th4e index route from the previous section to build onto this routes table 
+
+    > anchor element in our listings/index.ejs file to link to this new route 
+        <!-- listings/index.ejs -->
+
+        <!--Meta Data located above-->
+        <h1>Here's all the Listings</h1>
+        <!--Add in new anchor element-->
+        <a href="/listings/new">Add a New Listing</a>
+        <!--Closing body and html element under-->
+
+You Do: Render a New listing Form 
+    > inside of controllers/listings.js, develop route for GET requests to /listings/new 
+        1. create a route for GET requests to /listings/new
+        2. use res.render(), render a new view called listings/new.ejs
+        3. inside of views/listings, create a new file called new.ejs
+        4. include the navbar partial in new.ejs
+        5. add an <h1> element that says "Add a New Listing!"
+        6. add a form that has a submit button, leave the form blank for now
+        
+        - make sure to give your submit button text to see in the browser
+
+Schema to Form Field Mapping
+    - atp accepting some data from the use; however, what should we accept 
+    > look at schema for our listings to determine what data we want to accept from the user
+
+        streetAddress: {
+            type: String,
+            required: true,
+        },
+        city: {
+            type: String,
+            required: true,
+        },
+        price: {
+            type: Number,
+            required: true,
+            min: 0,
+        },
+        size: {
+            type: Number,
+            required: true,
+            min: 0,
+        },
+
+        - intentionally left off the owner field because we will not expect out end users to enter their own user ID and will instead handle this in the controller action 
+    
+    > add these to our form in views/listings/new.ejs 
+        <!-- views/listings/new.ejs -->
+
+        <form>
+          <label for="street-address">Street Address:</label>
+          <input type="text" name="streetAddress" id="street-address" />
+          <label for="city">City:</label>
+          <input type="text" name="city" id="city" />
+          <label for="price">Price:</label>
+          <input type="number" name="price" id="price" min="0" />
+          <label for="size">Size:</label>
+          <input type="number" name="size" id="size" min="0" />
+          <button type="submit">Add Listing</button>
+        </form>
+
+        - the name attribute on the input elements will be used to access the data from the form in our controller action
+        - we are also using some HTML form validation to ensure the user enters a number greater than 0 for the price and size field
+
+    

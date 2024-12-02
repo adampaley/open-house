@@ -21,4 +21,32 @@ Cloning the Auth Boilerplate
 GitHub Setup
     > add this project to GitHub, initialize a new Git repository   
         git init
+        git add .
+        git commit -m "init commit"
     
+    > make a new repository on GitHub named open-house
+    > link your local project to your remote GitHub repo
+        git remote add origin https://github.com/adampaley/open-house.git
+        git push origin main
+    > open project 
+        code .
+
+Install Dependencies
+    > install all of the packages listed in pacakage.json
+        npm i
+
+Create Your .gitignore
+    > once these files are created, add .env, package-lock.json, and node_modules to your .gitignore file
+        .env
+        node_modules
+        pacakage-lock.json
+
+Create Your .env
+    - create MONGODB_URI and SESSION_SECRET to hold values used in our auth logic
+        - MONGODB_URI will connect to your MongoDB Atlas connection string
+        - SESSION_SECRET will aid in your auth session logic 
+    > add .env file and add the following secret keys
+        MONGODB_URI=
+        SESSION_SECRET=
+    > start the server
+        nodemon start

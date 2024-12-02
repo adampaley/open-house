@@ -1,0 +1,99 @@
+Building the Listing Model 
+    - starter code provided the basic user authentication funcionality for our application, so we can already check off three of our user stories:
+        As a new user, I want to easily create a new account, so I can access personalized features and services on the platform. 
+        As a registered user, I want to log in to my account, so I can access my personal data and interact with the platform’s features. 
+        As a logged-in user, I want the ability to log out of my account, to ensure its secure when I’m not using the platform. 
+ 
+    - focus on the following user story 
+        As a user, I want to create listings for my real estate properties, to advertise them to potential buyers or renters.
+
+    - before creating a listing, we need to create a Schema and Model for our listing
+    > let's create a new file in our models directory called listing.js
+        - inside listing.js, let's create a new Schema for our listing 
+    
+        // models/listing.js 
+        const mongoose = require('mongoose')
+
+        const listingSchema = new mongoose.Schema({})
+
+        - always use the new keyword when creating a new instance of a Schema
+            - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/new
+        - this is because we do not want to modify the Schema class itself; instead we wantt o create a new instance of it
+            - this is a common pattern in object-oriented programming
+    
+    - first, we require Mongoose
+    - then, we create a new instance of a Schema using the Schema class
+    - the Schema class takes in an object with key-value pairs that represents our model's fields and data types
+    - looking at our ERD for the listing model, we can see that we need the following fields
+        * street address - String and is required
+        * city - String and is required
+        * price - Number, minimum of 0, and is required
+        * size - number, a minimum of 0, and is required
+    > translating that into JS using the Mongoose library, we get the following:
+        // models/listing.js
+        
+        const mongoose = require('mongoose')
+
+        const listingSchema = new mongoose.Schema({
+            streetAddress: { type: String, required: true }, 
+            city: { type: String, required: true },
+            price: { type: Number, min: 0, required: true },
+            size: { type: Number, min: 0, required: true }
+        })
+
+        - the Schema class can take an optional second parameter that is also an object
+        - this is where we can turn on options for a document, such as timestamps
+        - also, notice that we have kept camel case for our field names to stay consistent with the naming convention of JavaScript
+
+Embedded Data vs Referencing Data
+    - in Mongoose, there are two ways to represent relationships between data
+    - embedding - where we nest one document inside another
+    - referencing - where we store a reference to another document inside a document
+
+    - in our ERD, we have a one-to-many rlationship beween users and listings
+    - we could embed an array of listing documents inside our user document, but this would mean pulling in all user data whenever accessing a listing
+    - will instead opt to reference  auser document inside a listing document 
+        - this will allow us to quickly check who owns a listing, which will give us the ability to control who can edit and delete a listing
+
+    > need a field to represent this relationship, call this field owner
+        // models/listing.js 
+
+        // ... other properties located above
+          size: {
+            type: Number,
+            required: true,
+            min: 0,
+          },
+          owner: {}
+
+    - this field is still in Mongoose, so we must igve it a type
+    - however, we are not storing just a string or a number in this field, but instead we are going to store a user's document object ID
+    - there is a particular type in mongoose for this called mongoose.Schema.Types.ObjectId
+        - will also need to tell Mongoose what model this field is referenceing
+    > we do this by adding the ref property to this field i.e. the User model
+        // models/listing.js 
+        
+        // ... other properties located above
+          size: {
+            type: Number,
+            required: true,
+            min: 0,
+          },
+          owner: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+          }
+
+        - Notice we have not added the favoritedBy field yet - will added in a futurer section
+
+Compiling and Exporting the Model
+    - so far, we have only created a schema for our listing - a blueprint for what our listing will look like
+    - to have access to methods that will allow us to create, read, update, and delete listings, we need to compile our schema into a model
+        - we do this by calling the mongoose.model() method and passing in the name of the model we want to create and the schema we want to use to create it
+    > need to export the model because we want to use it in other files
+        // models/listing.js
+
+        // ... listingSchema located above
+        const Listing = mongoose.model('Listing', listingSchema);
+
+        module.exports = Listing;

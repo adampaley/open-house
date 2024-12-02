@@ -1,0 +1,30 @@
+Building the Listings Controller 
+    - we are still on the user story
+        As a user, I want to create listings for my real estate properties, to advertise them to potential buyers or renters.
+
+    - however, we need to do some more prep work before we can create a listing
+    > create our controller by creating a router, import the listings model, and export the router so that we can mount it in our server.js file
+
+    > create a new file in our controllers directory called listings.schema
+        // controllers/listings.js
+
+        const express = require('express');
+        const router = express.Router();
+
+        const Listing = require('../models/listing');
+
+        module.exports = router;
+
+    > once our route is exported, we can import into our server.js file 
+        // server.js
+
+        // other require statements for libraries above
+        const authController = require('./controllers/auth.js');
+        // add listings controller:
+        const listingsController = require('./controllers/listings');
+
+        // . . .
+
+        app.use('/auth', authController);
+        // mount listings controller
+        app.use('/listings', listingsController);

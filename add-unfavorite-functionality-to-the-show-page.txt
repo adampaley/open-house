@@ -1,0 +1,77 @@
+User Story
+    - look at next user story 
+        As a user, I want to remove listings from my favorites, to keep my favorites list relevant to my current interests.
+
+Conceptualizing the Route 
+    - our route should listen for DELETE requests for /listings/:listingId/favorited-by/:userId
+        Action     | What It Does          | HTTP Verbs | Route
+        Unfavorite | Unfavorites a listing | DELETE     | /listings/:listingId/favorited-by/:userId
+
+    - include the userId in our route to stay consistent with our functionality for adding favorites 
+
+Building the UI 
+    - let's modify the 'Favorites' section of our show page with an 'Unfavorite' button
+    - as with adding favorites, we'll need to include listing._id and user._id in our DELETE request
+
+    > add the following <form> to the if block 
+        <!-- views/listings/show.ejs -->
+
+        <h2>Favorites</h2>
+        <p>Favorited by <%= listing.favoritedByUsers.length %> people.</p>
+        <% if (userHasFavorited) { %>
+          <p>You've favorited this listing!</p>
+
+          <form
+            action="/listings/<%= listing._id %>/favorited-by/<%= user._id %>?_method=DELETE"
+            method="POST"
+          >
+            <button type="submit">Unfavorite it</button>
+          </form>
+
+        <% } else { %>
+          ...
+        <% } %>
+
+Scaffolding the Function 
+    - let's build the scaffolding for our controller function
+    - with this we'll confirm that both the listingId and the userId are accesible through req.params
+
+    > add the following to controllers/listings.js
+        // controllers/listings.js
+
+        router.delete('/:listingId/favorited-by/:userId', async (req, res) => {
+          try {
+            console.log('userId: ', req.params.userId);
+            console.log('listingId: ', req.params.listingId);
+            res.send(`Request to unfavorite ${req.params.listingId}`);
+          } catch (error) {
+            console.log(error);
+            res.redirect('/');
+          }
+        });
+
+    > click the unfavorite button and check your terminal for the logged data 
+
+Writing the Controller Action 
+    - we have confirmed access to req.params.listingId and req.params.userId, let's complete the controller action 
+    - our goal here is to update a listing by removing the userId from the favoritedByUsers array
+        - once again, we'll utilize the findByIdAndUpdate() method, but this time using the MongoDB $pull operator 
+        - https://www.mongodb.com/docs/manual/reference/operator/update/pull/
+    - the $pull behaves much like the $push operator, except that it removes a target value from the array
+        const updateObject = { $pull: : { targetArray: valueForRemoval } }
+    
+    - in this case, we'll want to remove req.params.userId from favoritedByUsers 
+    > update the function
+        // controllers/listings.js
+
+        router.delete('/:listingId/favorited-by/:userId', async (req, res) => {
+          try {
+            await Listing.findByIdAndUpdate(req.params.listingId, {
+              $pull: { favoritedByUsers: req.params.userId },
+            });
+            res.redirect(`/listings/${req.params.listingId}`);
+          } catch (error) {
+            console.log(error);
+            res.redirect('/');
+          }
+        });

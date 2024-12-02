@@ -1,0 +1,112 @@
+User Story 
+    - now that we are displaying all the listings on our index page, let's take a look at the next user story
+        As a user interested in a property, I want to view all details of a listing, including information about its owner, by following a link from the main listing page.
+    - based on our user story, the show page should include information on the owner of the listing
+        - will once again utilize the populate() method to join the referenced data
+
+Conceptualize the Route 
+    our route should listen for GET requests on /listings/:listingId
+
+        Action | What It Does               | HTTP Verbs | Route
+        Show   | Displays a single listing  | GET        | /listings/:listingId
+ 
+Building the UI
+    - make a small change in views/index.ejs
+    - the US that issues our GET request will be an anchor tag that prompts the user to 'View more details' about a particular listing
+    - we'll also need to include the listing._id in the request URL
+    - this will allow us to retrieve a specific listing in our controller 
+
+    > update the <li> with the anchor element as show below 
+        <!-- views/listings/index.ejs -->
+
+        <li>
+          A listing in <%= listing.city %> owned by <%= listing.owner.username %>.
+          <a href="/listings/<%= listing._id %>">View more details.</a>
+        </li>
+
+Scaffolding the Function 
+    > let's build the scaffolding for our controller function 
+    - this scaffolding will help us confirm a few things
+        1. the route is reponding to the request issues by the anchor tag in views/listings/index.ejs
+        2. our function has access to the listingId being passed from the front end 
+    
+    > add the following to controllers/listings.js
+        // controllers/listings.js
+
+        router.get('/:listingId', async (req, res) => {
+          try {
+            console.log('listingId: ', req.params.listingId);
+            res.send(`Listings show page`);
+          } catch (error) {
+            console.log(error);
+            res.redirect('/');
+          }
+        });
+
+    > click on the 'View more details' link on the listing landing page
+        - in browser, should see the Listing show page message
+        - in terminal, should see the ObjectId for the listing
+
+Writing the Controller Action 
+    - now that our function has access to the listingId, we can retrieve a specific listing and render it to the view 
+    > update the function as show below
+        // controllers/listings.js
+
+        router.get('/:listingId', async (req, res) => {
+          try {
+            const populatedListings = await Listing.findById(
+            req.params.listingId
+            ).populate('owner');
+
+            res.render('listings/show.ejs', {
+            listing: populatedListings,
+            });
+          } catch (error) {
+            console.log(error);
+            res.redirect('/');
+          }
+        });
+
+        - in our application, need to populate() the owner path anytime we wish to display information about an owner beyond an ObjectId
+
+Rendering the VIEW 
+    - want two sections here: 
+        1. a details section with information on the listing, including its city, size, price, and streetAddress
+        2. an owner section displaying the username of the listing owner, with a message indicated whehter the user viewing the listing is th eonwer of the property 
+
+    > run the following command in your terminal to create a show.ejs file
+        touch views/listings/show.ejs 
+    > add the boilerplate and listing details 
+        <!-- views/listings/show.ejs -->
+
+        <!DOCTYPE html>
+        <html lang="en">
+          <head>
+            <meta charset="UTF-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <title><%= listing.owner.username %>'s listing</title>
+          </head>
+          <body>
+            <%- include('../partials/_navbar.ejs') %>
+
+            <h1>A listing in <%= listing.city %></h1>
+
+            <h2>Details</h2>
+            <p>House Size: <%= listing.size %> sq ft</p>
+            <p>Price: $<%= listing.price %></p>
+            <p>Street address: <%= listing.streetAddress %></p>
+          </body>
+        </html>
+
+    > add a section for information on the owner, use some conditional rendering here 
+        <!-- views/listings/show.ejs -->
+
+          <h2>Owner</h2>
+          <% if (listing.owner._id.equals(user._id)) { %>
+            <p>You own this!</p>
+          <% } else { %>
+            <p>You don't own this, <%= listing.owner.username %> does!</p>
+          <% } %>
+        </body>
+
+    - remember, thanks to the populate() method, the owner of the listing is now an object containing user data

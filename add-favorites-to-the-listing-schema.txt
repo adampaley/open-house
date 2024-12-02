@@ -1,0 +1,37 @@
+User Story
+    - look at two user stories 
+        As a user, I want to see the number of favorites a listing has received, to gauge its popularity and potential demand. 
+        As a user, I want to favorite a listing, so I can easily find and review it later. As a user, I want to remove listings from my favorites, to keep my favorites list relevant to my current interests.
+    - to implement this functionality, we'll first need to add a new property to our listingSchema called favoritedByUsers
+
+    - the favoritedByUsers property will have a many-to-many relationship between listing and users 
+
+What is a Many-to-Many Relationship?
+    - in a many-to-many relationship, multiple documents in one collection are associated with multiple documents in another collection
+    - this kind of releationship is useful when multiple users need to be associated with a resource and vice versa
+        e.g. a user can visit many places, and each place has been visited by many users
+
+    - our application currently has a one-to-many relationship between listing and user, where one user can own many listings
+        - however, our favoriting functionality will require a many-to-many relationship, as a listing can be favorited by many users, and a user can favorite many listings
+
+Implementing a Many-to-Many Relationship
+    - the favoritedByUsers property will hold an array of references to documents in the User collection
+    - whenever a user marks a listing as a favorite, we'll add their ObjectId to this array
+
+    > update your listingSchema with the following
+        // models/listing.js
+
+        const listingSchema = new mongoose.Schema({
+          // ... other properties above
+
+          favoritedByUsers: [
+            {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            },
+          ],
+        });
+
+    - two benefits of this setup:
+        1. if we ever want to see how many people have favorited a listing, can access the length of the favoritedByUsers array
+        2. by checking the array for a specific ObjectId, we'll be able to determine whether a specific user has favorited the listing or not

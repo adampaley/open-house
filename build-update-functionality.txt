@@ -1,0 +1,114 @@
+User Story 
+    - address the next component of the user story
+        As a user who owns a listing, I want to edit details of my listings, to ensure the information stays up-to-date.
+    - as with our delete functionality, we'll want some additional security here
+    - the edit link is only visible to the owner of the listing, but an unauthorized user could still find a way to navigate to the edit page
+    - to handle the scenario, we'll make sure the controller action is protected
+
+    - should a user attempt to update a listing they don't own, they will receive a message: "you don't have permission to do that"
+
+    - the term protected controller action refers a controller action that is secured through an authentication or authorization check
+    - this means that only uers who meet certain criter can access the functionality of that action 
+
+Conceptualizing the Route 
+    - our route should listen for PUT requests on /listings/:listingId 
+            Action | What It Does             | HTTP Verbs | Route
+            Update | Update a single listing  | PUT        | /listings/:listingId
+ 
+    > update our form's action and method attributes
+        <!-- views/listings/edit.ejs -->
+
+        <!-- Update the form -->
+        <form action="/listings/<%= listing._id %>?_method=PUT" method="POST"></form>
+
+Scaffolding the Function
+    - build the scaffolding for our controller function
+    - confirm the following:
+        1. the listingId is correctly passed through req.params
+        2. the user object is accessible via req.session 
+    
+    > update controllers/listings.js with the code 
+        // controllers/listings.js
+
+        router.put('/:listingId', async (req, res) => {
+          try {
+            console.log('listingId:', req.params.listingId);
+            console.log('user:', req.session.user);
+            res.send(`A PUT request was issued for ${req.params.listingId}`);
+          } catch (error) {
+            console.log(error);
+            res.redirect('/');
+          }
+        });
+    > test
+
+Writing the Controller Action 
+    - we have confirmed access to req.params.listingId and req.session.user._id, let's complete the controller action 
+    - the controller action should accomplish:
+        1. retrieve a specific listing using its ObjectId 
+        2. verify permissions by comparing the owner property of the listing with req.session.user._id
+            - if the user making the request is not the owner, they should receive the message: "you don't have permission to do that"
+        3. if the user is the owner, the listing should be updated using the updateOne() method
+    
+    Retrieving the Listing
+        > remove the console logs and retrieve the listing using the findById() method
+            // controllers/listings.js
+
+            router.put('/:listingId', async (req, res) => {
+              try {
+                const currentListing = await Listing.findById(req.params.listingId);
+                res.send(`A PUT request was issued for ${req.params.listingId}`);
+              } catch (error) {
+                console.log(error);
+                res.redirect('/');
+              }
+            });
+
+    Implementing a Permission Check 
+        - address the permission check using the equals() method to check equality between the current listing's owner and the user._id on req.session
+            - https://mongodb.github.io/node-mongodb-native/api-bson-generated/objectid.html#equals
+        > update the function following if...else block
+            // controllers/listings.js
+
+            router.put('/:listingId', async (req, res) => {
+              try {
+                const currentListing = await Listing.findById(req.params.listingId);
+
+                if (currentListing.owner.equals(req.session.user._id)) {
+                console.log('Permission granted');
+                } else {
+                console.log('Permission denied');
+                }
+
+                res.send(`A PUT request was issued for ${req.params.listingId}`);
+              } catch (error) {
+                console.log(error);
+                res.redirect('/');
+              }
+            });
+
+    Updating the Listing
+        - take a moment to explore the updateOne() method - https://mongoosejs.com/docs/api/model.html#Model.updateOne()
+        - when updateOne() is called on a document instance, it updates the document with the provided data
+            const docInstance = await Model.findById(req.params.modelId);
+            docInstance.updateOne({ name: 'Alex' });
+        - the updateOne() method can also be called on the model
+            - in this context, it requires an object specifying the criteria to identify the docuemnt for update
+            - we're not using this approach because we need to verify user permission before deletion
+        > update the function 
+            // controllers/listings.js
+
+            router.put('/:listingId', async (req, res) => {
+              try {
+                const currentListing = await Listing.findById(req.params.listingId);
+                if (currentListing.owner.equals(req.session.user._id)) {
+                await currentListing.updateOne(req.body);
+                res.redirect('/listings');
+                } else {
+                res.send("You don't have permission to do that.");
+                }
+              } catch (error) {
+                console.log(error);
+                res.redirect('/');
+              }
+            });

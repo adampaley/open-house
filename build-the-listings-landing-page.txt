@@ -1,0 +1,44 @@
+Route for GET All Listings 
+    - before creating a listing, we will need a route to display all of the listings
+    - this way, we can redirect users to the listings page after they create a new listing 
+
+    - can determine that we need a GET request to /listings, this will be our index page for listings
+
+        Action | What It Does          | HTTP Verb | Route
+        Index  | Displays all listings | GET       | /listings
+
+        - the index action is one of two read actions in CRUD
+        - it is used to display all of the resources of a given type
+
+You Do: Log All Listings
+    - we have determined that we need a route for GET requests /listings
+    > let's build them inside controller/listings.js
+        1. create a route for GET requests /listings
+        2. using the Listing model, find all listings
+        3. console.log() the listings
+        4. res.send() a message that says "Listings index page"
+        5. console.log() any errors that occur 
+        6. test your route in the broswer by going to localhost:3000/listings manually
+            - make sure you have started your server with nodemon before testing your route 
+            - after completing the above steps, should see the message "Listings index page" in the broswer
+            - should see an empty array in ther terminal because no listings
+
+Rendering the Listings Index Page
+    - have confirmed that our route is working, now it's time to render the listings index page
+    > create a new directory called listings in our views directy, and within that make an index.ejs
+    > add the following code to new views/listings/index.ejs 
+        <!-- views/listings/index.ejs -->
+
+        <!DOCTYPE html>
+        <html lang="en">
+          <head>
+            <meta charset="UTF-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <title>All Listings</title>
+          </head>
+          <body>
+            <h1>Here's all the Listings</h1>
+          </body>
+        </html>
+
+    > update route to render index page

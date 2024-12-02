@@ -1,0 +1,98 @@
+OpenHouse
+    - during this module, we are going to create a real estate application called OpenHouse
+    - this application will allow sers to create listing profiles for the properties they own
+    - will be able to track details like
+        * street address
+        * city
+        * price
+        * size in sq ft
+        * owner
+        * users who have favorited the listing
+    - users can browse all listings, access listing details, create new listings, edit existing ones, and delete listings
+    - additionally, users can favorite or unfavorite a listing
+
+    - the application includes user authentication and authorization
+    - users must sign up and log in to create, edit, or delete a listing 
+
+    - moreover, use can only edit or delete a listing if they are its owner
+
+Project Planning 
+    - project planning is crucial for any project, helping to understand its scope and divide it into manageable parts
+    - two key tools in this process are User Stories and Entity-Relationship Diagrams (ERDs)
+        * User Stories describe features from the user's perspective, to clarify the application's functionality and user experience
+        * ERD outline the system's data structure
+    - starting with User Stories and then developing ERDs is often beneficial, as it ensures a well-rounded approach to both user needs and data design
+
+    User Stories 
+        - user stories are a way to describe an application's functionality from a user's perspective
+        - they often written in the format of
+            As a user, I want to do X for Y reason
+        
+        - this is an excellent way to describe and break down the functionality of an application
+        - it is also an excellent way to get a sense of what the user experience will be like
+        - user story creation is often an iterative process, and it is normal to start with a few user stories and then add more as the project progresses
+        
+        - this being an iterative process, there is often a way to track what is considered the minimum viable product (MVP for an application) - the minimum amount of functionality an application needs to be regards as a viable product
+
+        > create some user stories 
+            As a new user, I want to easily create a new account, so I can access personalized features and services on the platform. 
+            As a registered user, I want to log in to my account, so I can access my personal data and interact with the platform’s features. 
+            As a logged-in user, I want the ability to log out of my account, to ensure its secure when I’m not using the platform. 
+            As a user, I want to create listings for my real estate properties, to advertise them to potential buyers or renters. 
+            As a user, I want to view all the listings created by every user on a single page, to explore available properties. 
+            As a user interested in a property, I want to view all details of a listing, including information about its owner, by following a link from the main listing page. 
+            As a user who owns a listing, I want the option to delete a listing I created, in case the property is no longer available. 
+            As a user who owns a listing, I want to edit details of my listings, to ensure the information stays up-to-date. 
+            As a user, I want to see the number of favorites a listing has received, to gauge its popularity and potential demand. 
+            As a user, I want to favorite a listing, so I can easily find and review it later. 
+            As a user, I want to remove listings from my favorites, to keep my favorites list relevant to my current interests. 
+            As a user, I want a profile page to view both the listings I own and the listings I’ve favorited, so that I can easily review everything in one place.
+
+        - developing these user stories helps us understand the required functionalities for our application
+        - additionally, they serve as a practical checklist to guide our development process
+    
+    ERDs 
+        - entity relationship diagrams (ERDs) are a way to describe the data that will be used in an application
+        - using the user stories we created above, we know we must keep track of users and listings
+        - before considering the relationships betweem users and listings, let's consider what data we need to keep track of each resource
+
+        - for users, we need to keep track of:
+            * username - String and is required
+            * password - String and is required
+        - for listings, we need to keep track of:
+            * street address - String and is required
+            * city - String and is required
+            * price -  Number, minimum of 0, and is required
+            * size - Number, minimum of 0, and is required 
+        
+                User                                                    Listings
+    Field       Type        Options                     Field           Type        Options
+    _id         ObjectId                                _id             ObjectId
+    username    String      { required: true }          streetAddress   String      { required: true }
+    password    String      { required: true }          city            String      { required: true }
+                                                        price           Number      { required: true, min: 0 }
+                                                        size            Number      { required: true, min: 0 }
+
+    - we are intentionally leaving off the favorites feature for now
+    - we will add a field/value pair for this feature when we add relatinoships to our ERD 
+
+    - let's add relaetionships
+    - first, let's dive into the relationship between users and listings
+    - we want a user to be able to create, eidt, and delete multiple listings they own
+    - this is a one-to-many relationship; a user can have many listings, but a listing can only have one user
+
+    - we also have the favorite functionality that we will be adding later
+    - a user can favorite many listings, and a listing can be favorited by many users
+        - this is a many-to-many relationship
+    - to represent this in our ERD, we must have a new field name to house the relationship
+    - we will call this field favoritedBy
+
+                    User                                                    Listings
+    Field       Type        Options                     Field               Type        Options
+|--<_id         ObjectId                      +-----    _id                 ObjectId
+|   username    String      { required: true }     |    streetAddress       String      { required: true }
+|   password    String      { required: true }     |    city                String      { required: true }
+|                                                  |    price               Number      { required: true, min: 0 }
+|                                                  |    size                Number      { required: true, min: 0 }
+|                                                  |---<owner               ObjectId    { ref: "User" }
+|------------------------------------------------------<favoritedByUsers    ObjectId    { ref: "User" }

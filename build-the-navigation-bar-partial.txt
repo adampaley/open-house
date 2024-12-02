@@ -1,0 +1,33 @@
+Navigation Bar 
+    - will need to build a few more routes to handle the creation of a listing
+    > create a navigation bar so that we can easily navigate between the different pages of our application
+    - going to be leveraging partials to build our page
+        - partials are a way to break up our views into smaller pieces, which help keep our code DRY and make it easier to maintain
+    > create a new directory called partials in the views directory
+    > inside partials, create a file called _navbar.ejs 
+    > inside of _navbar.ejs, create the HTML for our navbar that includes anchor tages for sign up, sign in, sign out, listings
+        <!-- partials/_navbar.ejs -->
+
+        <nav>
+          <a href="/listings">View all Listings</a>
+          <a href="/auth/sign-out">Sign Out</a>
+          <a href="/auth/sign-up">Sign Up</a>
+          <a href="/auth/sign-in">Sign In</a>
+        </nav>
+
+    - the application should only show navbar links relevant to the user (if user is signed in, do not want sign up or sign in | gues should not be able to view listings)
+    > conditionally render our navbar links
+        <!-- partials/_navbar.ejs -->
+
+        <nav>
+          <% if (user) { %>
+            <a href="/listings">View all Listings</a>
+            <a href="/auth/sign-out">Sign Out</a>
+          <% } else { %>
+            <a href="/auth/sign-up">Sign Up</a>
+            <a href="/auth/sign-in">Sign In</a>
+          <% } %>
+        </nav>
+
+You Do: Add Navbar to Listings Index Page
+    > add new navbar partial to our listings index page
